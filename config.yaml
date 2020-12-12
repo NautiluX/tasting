@@ -1,0 +1,17 @@
+---
+items:
+  - name: Bier 1
+    key: bier1
+  - name: Bier 2
+    key: bier2
+  - name: Leckeres Bier
+    key: bier3
+questions:
+  - name: "Farbe"
+    key: "farbe"
+  - name: "Geruch"
+    key: "geruch"
+  - name: "Bitterkeit"
+    key: "bitterkeit"
+  - name: "Gesamtbewertung"
+    key: "gesamtbewertung"
