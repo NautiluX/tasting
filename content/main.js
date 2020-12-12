@@ -5,7 +5,12 @@ $(function() {
 var model = {items:[]};
 
 var start = function(){
+  reloadLoop();
+}
+
+var reloadLoop = function() {
   reload();
+  setTimeout(reloadLoop, 10000);
 }
 
 var reload = function(){
@@ -13,9 +18,9 @@ var reload = function(){
     data.items.forEach(function(item, i){
       if (model.items.length <= i || JSON.stringify(item) != JSON.stringify(model.items[i])) {
         questions = "<div class=\"container rating-block\">";
-        item.rating.forEach(function(rating){
+        item.rating.forEach(function(rating, r){
           questions += "<div class=\"rating\">"
-          questions += "<div>" + rating.question.name + "</div><div>" + rating.avgRating + "</div>";
+          questions += "<div>" + rating.question.name + "</div>" + renderRating(item, r) + "<div>" + rating.avgRating + "</div>";
           questions += "</div>"
         })
         questions += `<button type="button" class="btn btn-primary" data-toggle="modal" data-target="#commentModal-`+item.key+`">
@@ -49,14 +54,41 @@ var reload = function(){
         } else {
           $("div#"+item.key).html(html);
         }
+        updateRatings(item);
       }
     });
     $('.carousel').carousel();
     $('button.comment-button').unbind();
     $('button.comment-button').click(sendComment);
-    setTimeout(reload, 10000);
+    $('input.ratingradio').unbind();
+    $('input.ratingradio').click(sendRating);
     model = data;
   });
+}
+
+var updateRatings = function(item) {
+  item.rating.forEach(function(rating, r){
+    i=1;
+    for(;i<=Math.round(rating.avgRating);i++){
+      $("#"+item.key+r+"-star"+i).prop("checked", true);  
+    }
+    for (;i<=5;i++){
+      $("#"+item.key+r+"-star"+i).prop("checked", false);  
+    }
+  });
+  
+}
+
+var renderRating = function(item, ratingNum) {
+  return `<div class="container">
+        <div class="starrating risingstar d-flex justify-content-center flex-row-reverse">
+            <input class="ratingradio" type="radio" id="`+item.key+ratingNum+`-star5" name="`+item.key+ratingNum+`-rating" value="5" item-key="`+item.key+`" rating-num="`+ratingNum+`"/><label for="`+item.key+ratingNum+`-star5" title="5 star"></label>
+            <input class="ratingradio" type="radio" id="`+item.key+ratingNum+`-star4" name="`+item.key+ratingNum+`-rating" value="4" item-key="`+item.key+`" rating-num="`+ratingNum+`"/><label for="`+item.key+ratingNum+`-star4" title="4 star"></label>
+            <input class="ratingradio" type="radio" id="`+item.key+ratingNum+`-star3" name="`+item.key+ratingNum+`-rating" value="3" item-key="`+item.key+`" rating-num="`+ratingNum+`"/><label for="`+item.key+ratingNum+`-star3" title="3 star"></label>
+            <input class="ratingradio" type="radio" id="`+item.key+ratingNum+`-star2" name="`+item.key+ratingNum+`-rating" value="2" item-key="`+item.key+`" rating-num="`+ratingNum+`"/><label for="`+item.key+ratingNum+`-star2" title="2 star"></label>
+            <input class="ratingradio" type="radio" id="`+item.key+ratingNum+`-star1" name="`+item.key+ratingNum+`-rating" value="1" item-key="`+item.key+`" rating-num="`+ratingNum+`"/><label for="`+item.key+ratingNum+`-star1" title="1 star"></label>
+        </div>
+  </div>`
 }
 
 var sendComment = function() {
@@ -67,15 +99,37 @@ var sendComment = function() {
     item: key,
     author: "me"
   };
-  $.post( "/comment", reload);
   $.ajax({
     type: "POST",
     url: "/comment",
     data: JSON.stringify(obj),
-    success: reload,
+    success: function(){
+      reload();
+    },
     dataType: "json",
   });
   $('#commentModal-'+key).modal('hide')
+}
+
+var sendRating = function() {
+  key = $(this).attr('item-key');
+  ratingNum = $(this).attr('rating-num');
+  value = $(this).attr('value');
+  obj = {
+    item: key,
+    ratingNum: ~~ratingNum,
+    rating: ~~value,
+    author: "me",
+  };
+  $.ajax({
+    type: "POST",
+    url: "/rating",
+    data: JSON.stringify(obj),
+    success: function(){
+      reload();
+    },
+    dataType: "json",
+  });
 }
 
 var buildCommentCarousel = function(item) {
