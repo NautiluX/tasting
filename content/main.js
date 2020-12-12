@@ -134,9 +134,14 @@ var sendRating = function() {
 
 var buildCommentCarousel = function(item) {
 
+  shuffledComments = item.comments
+  .map((a) => ({sort: Math.random(), value: a}))
+  .sort((a, b) => a.sort - b.sort)
+  .map((a) => a.value)
+
   return `<div id="carousel-` + item.key + `" class="carousel slide comment-carousel" data-ride="carousel">
   <div class="carousel-inner comment-carousel-inner">`+
-    item.comments.map(function(comment, i){
+    shuffledComments.map(function(comment, i){
       return `<div class="carousel-item` + (i==0?" active":"") +`" data-interval="` + (5000+Math.floor(Math.random() * Math.floor(5000))) + `"><div class="comment container">`
         + `<h3>&raquo; ` + comment.text  + ` &laquo;</h3> ` + comment.author + " zu " + item.name +
         `</div></div>`;
