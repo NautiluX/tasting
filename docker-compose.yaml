@@ -1,0 +1,8 @@
+version: '3'
+services:
+  tasting:
+    build: .
+    volumes:
+      - ./config.yaml:/root/config.yaml
+    ports:
+      - "8080:8080"
