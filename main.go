@@ -83,13 +83,14 @@ func NewServer() *Server {
 func (s *Server) ModelHandler(res http.ResponseWriter, req *http.Request) {
 	s.Model.update()
 	result, err := json.Marshal(s.Model)
-	resultString := string(result)
 	if err != nil {
-		resultString = fmt.Sprintf("%v", err)
+		resultString := fmt.Sprintf("%v", err)
 		res.WriteHeader(http.StatusInternalServerError)
+		_, _ = res.Write([]byte(resultString))
+		return
 	}
 	res.Header().Set("Content-Type", "application/json")
-	_, _ = res.Write([]byte(resultString))
+	_, _ = res.Write(result)
 }
 
 func (m *Model) update() {
@@ -122,6 +123,9 @@ func (s *Server) CommentHandler(res http.ResponseWriter, req *http.Request) {
 
 		var comment Comment
 		err := decoder.Decode(&comment)
+		//comment.Item = html.EscapeString(comment.Item)
+		//comment.Author = html.EscapeString(comment.Author)
+		//comment.Text = html.EscapeString(comment.Text)
 
 		if err != nil {
 			resultString = fmt.Sprintf("%v", err)

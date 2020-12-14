@@ -19,13 +19,14 @@
     <div class="cover-container d-flex w-100 h-100 p-3 mx-auto flex-column">
       <header class="masthead mb-auto">
         <nav class="navbar fixed-top navbar-expand-lg navbar-dark pink scrolling-navbar">
-        <div class="inner">
+        <div class="inner-header">
           <h3 class="masthead-brand">Tasting!</h3>
-          <!--<nav class="nav nav-masthead justify-content-center">
-            <a class="nav-link active" href="#">Home</a>
-            <a class="nav-link" href="#">Features</a>
-            <a class="nav-link" href="#">Contact</a>-->
-          </nav>
+          <div class="input-group mb-3 name-group" data-toggle="popover" data-content="Hier Name eingeben">
+            <div class="input-group-prepend">
+              <span class="input-group-text" id="name-text">Hi, ich bin</span>
+            </div>
+            <input type="text" class="form-control" id="name" aria-describedby="basic-addon3">
+          </div>
         </div>
         </nav>
       </header>

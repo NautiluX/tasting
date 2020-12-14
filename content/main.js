@@ -6,6 +6,15 @@ var model = {items:[]};
 
 var start = function(){
   reloadLoop();
+  $('div.name-group').popover({
+    trigger: "focus",
+  })
+  $('input#name').change( function(){
+    history.replaceState({}, null, "?name="+$(this).val());
+  });
+  searchParams = new URLSearchParams(window.location.search);
+  $('input#name').val(searchParams.get('name'));
+
 }
 
 var reloadLoop = function() {
@@ -93,11 +102,19 @@ var renderRating = function(item, ratingNum) {
 
 var sendComment = function() {
   key = $(this).attr('item-key');
+  $('#commentModal-'+key).modal('hide');
+  $('.modal-backdrop').remove();
+
+  name = $('input#name').val();
+  if (name == "") {
+    $('div.name-group').popover('show');
+    return;
+  }
   comment = $('textarea[item-key="'+key+'"]').val()
   obj = {
     text: comment,
     item: key,
-    author: "me"
+    author: name
   };
   $.ajax({
     type: "POST",
@@ -108,10 +125,14 @@ var sendComment = function() {
     },
     dataType: "json",
   });
-  $('#commentModal-'+key).modal('hide')
 }
 
 var sendRating = function() {
+  name = $('input#name').val();
+  if (name == "") {
+    $('div.name-group').popover('show');
+    return;
+  }
   key = $(this).attr('item-key');
   ratingNum = $(this).attr('rating-num');
   value = $(this).attr('value');
@@ -119,7 +140,7 @@ var sendRating = function() {
     item: key,
     ratingNum: ~~ratingNum,
     rating: ~~value,
-    author: "me",
+    author: name,
   };
   $.ajax({
     type: "POST",
@@ -143,7 +164,7 @@ var buildCommentCarousel = function(item) {
   <div class="carousel-inner comment-carousel-inner">`+
     shuffledComments.map(function(comment, i){
       return `<div class="carousel-item` + (i==0?" active":"") +`" data-interval="` + (5000+Math.floor(Math.random() * Math.floor(5000))) + `"><div class="comment container">`
-        + `<h3>&raquo; ` + comment.text  + ` &laquo;</h3> ` + comment.author + " zu " + item.name +
+        + "<h3>" + $(`<h3>`).text(`» ` + comment.text  + ` «`).html() + "</h3>" + "&nbsp;"+ $("<p/>").text(comment.author + " zu " + item.name).html() +
         `</div></div>`;
     }).join("")
   + `
