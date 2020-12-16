@@ -18,11 +18,18 @@ type Server struct {
 type Model struct {
 	Items     []Item     `json:"items"`
 	Questions []Question `json:"questions"`
+	Texts     Texts      `json:"texts"`
 }
 
 type Config struct {
 	Items     []Item     `yaml:"items"`
 	Questions []Question `yaml:"questions"`
+	Texts     Texts      `yaml:"texts"`
+}
+
+type Texts struct {
+	Title string `yaml:"title" json:"title"`
+	Jumbo string `yaml:"jumbo" json:"jumbo"`
 }
 
 type Question struct {
@@ -109,7 +116,7 @@ func (s *Server) readModel() *Model {
 		}
 		items = append(items, newItem)
 	}
-	model := Model{items, s.Config.Questions}
+	model := Model{items, s.Config.Questions, s.Config.Texts}
 	model.update()
 	return &model
 }

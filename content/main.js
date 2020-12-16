@@ -71,6 +71,8 @@ var reload = function(){
     $('button.comment-button').click(sendComment);
     $('input.ratingradio').unbind();
     $('input.ratingradio').click(sendRating);
+    $('div.masthead-brand').html(data.texts.title)
+    $('div#jumbo').html(data.texts.jumbo)
     model = data;
   });
 }

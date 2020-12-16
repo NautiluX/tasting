@@ -15,3 +15,6 @@ questions:
     key: "bitterkeit"
   - name: "Gesamtbewertung"
     key: "gesamtbewertung"
+texts:
+  title: "Tasting!"
+  jumbo: "<h1>Welcome to our tasting event!</h1> Click on the stars to give your rating or leave comments for other attendees."
