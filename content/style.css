@@ -4,7 +4,7 @@ div.rating {
 }
 
 div.rating-block{
-  width: 30%;
+  width: 400px;
   margin: 0;
   min-height:200px;
   height:100%;
@@ -32,15 +32,26 @@ div.item-content{
   display: flex;
   justify-content: space-evenly;
   width: 100%;
+  flex-wrap: wrap;
   height: 100%;
+}
+
+div.numrating{
+  width: 20px;
+  text-align: left;
 }
 
 div.comment-carousel-inner {
 }
 
+div.item-container {
+  margin-top: 3rem; 
+}
+
 div.comment-carousel {
-  width: 50%;
   height: 100%;
+  min-width: 200px;
+  width: 500px;
 }
 
 div.header {

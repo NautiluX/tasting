@@ -29,7 +29,7 @@ var reload = function(){
         questions = "<div class=\"container rating-block\">";
         item.rating.forEach(function(rating, r){
           questions += "<div class=\"rating\">"
-          questions += "<div>" + rating.question.name + "</div>" + renderRating(item, r) + "<div>" + rating.avgRating + "</div>";
+          questions += "<div>" + rating.question.name + "</div>" + renderRating(item, r) + "<div><div class=\"numrating\">" + rating.avgRating + "</div></div>";
           questions += "</div>"
         })
         questions += `<button type="button" class="btn btn-primary" data-toggle="modal" data-target="#commentModal-`+item.key+`">
@@ -59,7 +59,7 @@ var reload = function(){
         html = "<h2>" + item.name + "</h2><div class=\"container item-content\"'>"+questions + buildCommentCarousel(item)+"</div>";
 
         if (model.items.length <= i) {
-          $("<div id=\"" +item.key+ "\">"+html+"</div>").appendTo("div.items");
+          $("<div id=\"" +item.key+ "\" class=\"container item-container\">"+html+"</div>").appendTo("div.items");
         } else {
           $("div#"+item.key).html(html);
         }
@@ -154,6 +154,9 @@ var sendRating = function() {
 }
 
 var buildCommentCarousel = function(item) {
+  if (item.comments.length === 0) {
+    return `<div class="comment-carousel">`;
+  }
 
   shuffledComments = item.comments
   .map((a) => ({sort: Math.random(), value: a}))
@@ -169,11 +172,11 @@ var buildCommentCarousel = function(item) {
     }).join("")
   + `
   </div>
-  <a class="carousel-control-prev" href="#carouselExampleIndicators" role="button" data-slide="prev">
+  <a class="carousel-control-prev" href="#carousel-` + item.key + `" role="button" data-slide="prev">
     <span class="carousel-control-prev-icon" aria-hidden="true"></span>
     <span class="sr-only">Previous</span>
   </a>
-  <a class="carousel-control-next" href="#carouselExampleIndicators" role="button" data-slide="next">
+  <a class="carousel-control-next" href="#carousel-` + item.key + `" role="button" data-slide="next">
     <span class="carousel-control-next-icon" aria-hidden="true"></span>
     <span class="sr-only">Next</span>
   </a>

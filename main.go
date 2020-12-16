@@ -6,17 +6,17 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/sdomino/scribble"
 	"gopkg.in/yaml.v2"
 )
 
 type Server struct {
 	Config Config
-	Model  *Model
+	Db     *scribble.Driver
 }
 
 type Model struct {
 	Items     []Item     `json:"items"`
-	Ratings   []Rating   `json:"ratings"`
 	Questions []Question `json:"questions"`
 }
 
@@ -57,13 +57,22 @@ type Vote struct {
 }
 
 func main() {
+
+	setupDb()
 	server := NewServer()
 	fs := http.FileServer(http.Dir("./content"))
 	http.HandleFunc("/model", server.ModelHandler)
 	http.HandleFunc("/rating", server.RatingHandler)
 	http.HandleFunc("/comment", server.CommentHandler)
 	http.Handle("/", fs)
-	http.ListenAndServe(":8080", nil)
+
+	err := http.ListenAndServe(":8080", nil)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func setupDb() {
 }
 
 func NewServer() *Server {
@@ -76,13 +85,38 @@ func NewServer() *Server {
 	if err != nil {
 		panic(err)
 	}
-	s := Server{config, &Model{config.Items, []Rating{}, config.Questions}}
+
+	db, err := scribble.New("db", nil)
+	if err != nil {
+		panic(err)
+	}
+
+	s := Server{config, db}
 	return &s
 }
 
+func (s *Server) readModel() *Model {
+	items := []Item{}
+	for _, item := range s.Config.Items {
+		newItem := Item{}
+		err := s.Db.Read("item", item.Key, &newItem)
+		if err != nil {
+			err := s.Db.Write("item", item.Key, &item)
+			if err != nil {
+				panic(err)
+			}
+			newItem = item
+		}
+		items = append(items, newItem)
+	}
+	model := Model{items, s.Config.Questions}
+	model.update()
+	return &model
+}
+
 func (s *Server) ModelHandler(res http.ResponseWriter, req *http.Request) {
-	s.Model.update()
-	result, err := json.Marshal(s.Model)
+	model := s.readModel()
+	result, err := json.Marshal(model)
 	if err != nil {
 		resultString := fmt.Sprintf("%v", err)
 		res.WriteHeader(http.StatusInternalServerError)
@@ -102,7 +136,7 @@ func (m *Model) update() {
 			}
 		}
 		if item.Comments == nil {
-			m.Items[i].Comments = []Comment{Comment{"Alice", "Hello World", ""}, Comment{"Bob", "Greatest beer ever!", ""}}
+			m.Items[i].Comments = []Comment{}
 		}
 		for r, rating := range item.Rating {
 			var sum float64 = 0
@@ -117,15 +151,13 @@ func (m *Model) update() {
 }
 
 func (s *Server) CommentHandler(res http.ResponseWriter, req *http.Request) {
+	model := s.readModel()
 	resultString := ""
 	if req.Method == "POST" {
 		decoder := json.NewDecoder(req.Body)
 
 		var comment Comment
 		err := decoder.Decode(&comment)
-		//comment.Item = html.EscapeString(comment.Item)
-		//comment.Author = html.EscapeString(comment.Author)
-		//comment.Text = html.EscapeString(comment.Text)
 
 		if err != nil {
 			resultString = fmt.Sprintf("%v", err)
@@ -137,9 +169,14 @@ func (s *Server) CommentHandler(res http.ResponseWriter, req *http.Request) {
 			return
 		}
 
-		for i, item := range s.Model.Items {
+		for i, item := range model.Items {
 			if item.Key == comment.Item {
-				s.Model.Items[i].Comments = append(s.Model.Items[i].Comments, comment)
+				model.Items[i].Comments = append(model.Items[i].Comments, comment)
+				err := s.Db.Write("item", item.Key, model.Items[i])
+				if err != nil {
+					s.InternalErrorFromErr(res, err)
+					return
+				}
 			}
 		}
 		s.Success(res)
@@ -148,6 +185,10 @@ func (s *Server) CommentHandler(res http.ResponseWriter, req *http.Request) {
 	s.InternalError(res, resultString)
 }
 
+func (s *Server) InternalErrorFromErr(res http.ResponseWriter, err error) {
+	errString := fmt.Sprintf("Error: %v", err)
+	s.InternalError(res, errString)
+}
 func (s *Server) InternalError(res http.ResponseWriter, body string) {
 	res.WriteHeader(http.StatusInternalServerError)
 	_, _ = res.Write([]byte(body))
@@ -159,6 +200,7 @@ func (s *Server) Success(res http.ResponseWriter) {
 }
 
 func (s *Server) RatingHandler(res http.ResponseWriter, req *http.Request) {
+	model := s.readModel()
 	resultString := ""
 	if req.Method == "POST" {
 		decoder := json.NewDecoder(req.Body)
@@ -171,21 +213,26 @@ func (s *Server) RatingHandler(res http.ResponseWriter, req *http.Request) {
 			s.InternalError(res, resultString)
 			return
 		}
-		if vote.Rating < 1 || vote.Rating > 5 || vote.Author == "" || vote.Item == "" || vote.RatingNum < 0 || vote.RatingNum >= len(s.Model.Questions) {
+		if vote.Rating < 1 || vote.Rating > 5 || vote.Author == "" || vote.Item == "" || vote.RatingNum < 0 || vote.RatingNum >= len(model.Questions) {
 			s.InternalError(res, "missing field")
 			return
 		}
 
-		for i, item := range s.Model.Items {
+		for i, item := range model.Items {
 			if item.Key == vote.Item {
-				for v, existingVote := range s.Model.Items[i].Rating[vote.RatingNum].Votes {
+				for v, existingVote := range model.Items[i].Rating[vote.RatingNum].Votes {
 					if existingVote.Author == vote.Author {
-						s.Model.Items[i].Rating[vote.RatingNum].Votes[v] = vote
+						model.Items[i].Rating[vote.RatingNum].Votes[v] = vote
 						s.Success(res)
 						return
 					}
 				}
-				s.Model.Items[i].Rating[vote.RatingNum].Votes = append(s.Model.Items[i].Rating[vote.RatingNum].Votes, vote)
+				model.Items[i].Rating[vote.RatingNum].Votes = append(model.Items[i].Rating[vote.RatingNum].Votes, vote)
+				err := s.Db.Write("item", item.Key, model.Items[i])
+				if err != nil {
+					s.InternalErrorFromErr(res, err)
+					return
+				}
 			}
 		}
 		s.Success(res)
