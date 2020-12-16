@@ -223,6 +223,11 @@ func (s *Server) RatingHandler(res http.ResponseWriter, req *http.Request) {
 				for v, existingVote := range model.Items[i].Rating[vote.RatingNum].Votes {
 					if existingVote.Author == vote.Author {
 						model.Items[i].Rating[vote.RatingNum].Votes[v] = vote
+						err := s.Db.Write("item", item.Key, model.Items[i])
+						if err != nil {
+							s.InternalErrorFromErr(res, err)
+							return
+						}
 						s.Success(res)
 						return
 					}
