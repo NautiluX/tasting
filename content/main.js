@@ -23,20 +23,21 @@ var reloadLoop = function() {
 }
 
 var reload = function(){
-  $.getJSON( "/model", function(data) {
-    data.items.forEach(function(item, i){
-      if (model.items.length <= i || JSON.stringify(item) != JSON.stringify(model.items[i])) {
-        questions = "<div class=\"container rating-block\">";
-        item.rating.forEach(function(rating, r){
-          questions += "<div class=\"rating\">"
-          questions += "<div>" + rating.question.name + "</div>" + renderRating(item, r) + "<div><div class=\"numrating\">" + rating.avgRating + "</div></div>";
-          questions += "</div>"
-        })
-        questions += `<button type="button" class="btn btn-primary" data-toggle="modal" data-target="#commentModal-`+item.key+`">
+  if (!$('body').hasClass('modal-open')) {
+    $.getJSON( "/model", function(data) {
+      data.items.forEach(function(item, i){
+        if (model.items.length <= i || JSON.stringify(item) != JSON.stringify(model.items[i])) {
+          questions = "<div class=\"container rating-block\">";
+          item.rating.forEach(function(rating, r){
+            questions += "<div class=\"rating\">"
+            questions += "<div>" + rating.question.name + "</div>" + renderRating(item, r) + "<div><div class=\"numrating\">" + rating.avgRating + "</div></div>";
+            questions += "</div>"
+          })
+          questions += `<button type="button" class="btn btn-primary" data-toggle="modal" data-target="#commentModal-`+item.key+`">
  Kommentieren 
 </button>`;
-        questions += "</div>";
-        questions += `<!-- Modal -->
+          questions += "</div>";
+          questions += `<!-- Modal -->
 <div class="modal fade" id="commentModal-`+item.key+`" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
   <div class="modal-dialog" role="document">
     <div class="modal-content">
@@ -56,25 +57,26 @@ var reload = function(){
     </div>
   </div>
 </div>`;
-        html = "<h2>" + item.name + "</h2><div class=\"container item-content\"'>"+questions + buildCommentCarousel(item)+"</div>";
+          html = "<h2>" + item.name + "</h2><div class=\"container item-content\"'>"+questions + buildCommentCarousel(item)+"</div>";
 
-        if (model.items.length <= i) {
-          $("<div id=\"" +item.key+ "\" class=\"container item-container\">"+html+"</div>").appendTo("div.items");
-        } else {
-          $("div#"+item.key).html(html);
+          if (model.items.length <= i) {
+            $("<div id=\"" +item.key+ "\" class=\"container item-container\">"+html+"</div>").appendTo("div.items");
+          } else {
+            $("div#"+item.key).html(html);
+          }
+          updateRatings(item);
         }
-        updateRatings(item);
-      }
+      });
+      $('.carousel').carousel();
+      $('button.comment-button').unbind();
+      $('button.comment-button').click(sendComment);
+      $('input.ratingradio').unbind();
+      $('input.ratingradio').click(sendRating);
+      $('div.masthead-brand').html(data.texts.title)
+      $('div#jumbo').html(data.texts.jumbo)
+      model = data;
     });
-    $('.carousel').carousel();
-    $('button.comment-button').unbind();
-    $('button.comment-button').click(sendComment);
-    $('input.ratingradio').unbind();
-    $('input.ratingradio').click(sendRating);
-    $('div.masthead-brand').html(data.texts.title)
-    $('div#jumbo').html(data.texts.jumbo)
-    model = data;
-  });
+  }
 }
 
 var updateRatings = function(item) {
